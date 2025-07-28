@@ -83,8 +83,9 @@ export default function useMessageProcess({ message }: { message?: TMessage | nu
   const showSibling = useMemo(
     () =>
       (hasNoChildren && latestMultiMessage && (latestMultiMessage.children?.length ?? 0) === 0) ||
-      !!siblingMessage,
-    [hasNoChildren, latestMultiMessage, siblingMessage],
+      !!siblingMessage ||
+      (message?.multiLLMSiblings && message.multiLLMSiblings.length > 0),
+    [hasNoChildren, latestMultiMessage, siblingMessage, message?.multiLLMSiblings],
   );
 
   useEffect(() => {
@@ -94,6 +95,19 @@ export default function useMessageProcess({ message }: { message?: TMessage | nu
       latestMultiMessage.conversationId === message?.conversationId
     ) {
       const newSibling = Object.assign({}, latestMultiMessage, {
+        parentMessageId: message.parentMessageId,
+        depth: message.depth,
+      });
+      setSiblingMessage(newSibling);
+    } else if (
+      hasNoChildren &&
+      message?.multiLLMSiblings &&
+      message.multiLLMSiblings.length > 0 &&
+      !latestMultiMessage
+    ) {
+      // Use the first multi-LLM sibling as the side-by-side message after refresh
+      const firstSibling = message.multiLLMSiblings[0];
+      const newSibling = Object.assign({}, firstSibling, {
         parentMessageId: message.parentMessageId,
         depth: message.depth,
       });

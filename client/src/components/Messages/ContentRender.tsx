@@ -17,6 +17,7 @@ type ContentRenderProps = {
   isCard?: boolean;
   isMultiMessage?: boolean;
   isSubmittingFamily?: boolean;
+  isCustomLogic?: boolean;
 } & Pick<
   TMessageProps,
   'currentEditId' | 'setCurrentEditId' | 'siblingIdx' | 'setSiblingIdx' | 'siblingCount'
@@ -33,6 +34,7 @@ const ContentRender = memo(
     isMultiMessage = false,
     setCurrentEditId,
     isSubmittingFamily = false,
+    isCustomLogic = false,
   }: ContentRenderProps) => {
     const { attachments, searchResults } = useAttachments({
       messageId: msg?.messageId,
@@ -110,7 +112,9 @@ const ContentRender = memo(
 
     const baseClasses = {
       common: 'group mx-auto flex flex-1 gap-3 transition-all duration-300 transform-gpu ',
-      card: 'relative w-full gap-1 rounded-lg border border-border-medium bg-surface-primary-alt p-2 md:w-1/2 md:gap-3 md:p-4',
+      card: isCustomLogic
+        ? 'relative w-full gap-1 rounded-lg border border-border-medium bg-surface-primary-alt p-2 md:w md:gap-3 md:p-4'
+        : "relative w-full gap-1 rounded-lg border border-border-medium bg-surface-primary-alt p-2 md:w-1/2 md:gap-3 md:p-4'",
       chat: maximizeChatSpace
         ? 'w-full max-w-full md:px-5 lg:px-1 xl:px-5'
         : 'md:max-w-[47rem] xl:max-w-[55rem]',
@@ -129,12 +133,14 @@ const ContentRender = memo(
         className={cn(
           baseClasses.common,
           isCard ? baseClasses.card : baseClasses.chat,
-          conditionalClasses.latestCard,
+          'bg-surface-secondary',
+          // conditionalClasses.latestCard,
           conditionalClasses.cardRender,
-          conditionalClasses.focus,
+          // conditionalClasses.focus,
           'message-render',
         )}
-        onClick={clickHandler}
+        style={{}}
+        // onClick={clickHandler}
         onKeyDown={(e) => {
           if ((e.key === 'Enter' || e.key === ' ') && clickHandler) {
             clickHandler();
@@ -159,27 +165,32 @@ const ContentRender = memo(
             msg.isCreatedByUser ? 'user-turn' : 'agent-turn',
           )}
         >
-          <h2 className={cn('select-none font-semibold', fontSize)}>{messageLabel}</h2>
+          <h2
+            className={cn('select-none font-semibold', fontSize)}
+            style={{ color: 'white', marginBottom: '0.5rem' }}
+          >
+            {messageLabel}
+          </h2>
 
           <div className="flex flex-col gap-1">
-            <div className="flex max-w-full flex-grow flex-col gap-0">
-              <ContentParts
-                edit={edit}
-                isLast={isLast}
-                enterEdit={enterEdit}
-                siblingIdx={siblingIdx}
-                messageId={msg.messageId}
-                attachments={attachments}
-                isSubmitting={isSubmitting}
-                searchResults={searchResults}
-                setSiblingIdx={setSiblingIdx}
-                isCreatedByUser={msg.isCreatedByUser}
-                conversationId={conversation?.conversationId}
-                content={msg.content as Array<TMessageContentParts | undefined>}
-              />
-            </div>
+            {/* <div className="flex max-w-full flex-grow flex-col gap-0"> */}
+            <ContentParts
+              edit={edit}
+              isLast={isLast}
+              enterEdit={enterEdit}
+              siblingIdx={siblingIdx}
+              messageId={msg.messageId}
+              attachments={attachments}
+              isSubmitting={isSubmitting}
+              searchResults={searchResults}
+              setSiblingIdx={setSiblingIdx}
+              isCreatedByUser={msg.isCreatedByUser}
+              conversationId={conversation?.conversationId}
+              content={msg.content as Array<TMessageContentParts | undefined>}
+            />
+            {/* </div> */}
 
-            {(isSubmittingFamily || isSubmitting) && !(msg.children?.length ?? 0) ? (
+            {/* {(isSubmittingFamily || isSubmitting) && !(msg.children?.length ?? 0) ? (
               <PlaceholderRow isCard={isCard} />
             ) : (
               <SubRow classes="text-xs">
@@ -203,7 +214,7 @@ const ContentRender = memo(
                   isLast={isLast}
                 />
               </SubRow>
-            )}
+            )} */}
           </div>
         </div>
       </div>

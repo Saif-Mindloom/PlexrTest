@@ -10,6 +10,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ command }) => ({
   server: {
     host: 'localhost',
+    allowedHosts: true,
+    // allowedHosts: '82d895d96003.ngrok-free.app',
     port: 3090,
     strictPort: false,
     proxy: {

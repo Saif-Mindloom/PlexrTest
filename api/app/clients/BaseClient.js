@@ -899,6 +899,15 @@ class BaseClient {
       throw new Error('User mismatch.');
     }
 
+    // Extract shared user message ID for multi-LLM requests
+    const { overrideUserMessageId } = this.options?.req?.body ?? {};
+    let sharedUserMessageId = null;
+    if (overrideUserMessageId) {
+      // Extract the base ID (without index) for multi-LLM grouping
+      const [baseUserMessageId] = overrideUserMessageId.split(Constants.COMMON_DIVIDER);
+      sharedUserMessageId = baseUserMessageId;
+    }
+
     const savedMessage = await saveMessage(
       this.options?.req,
       {
@@ -906,6 +915,7 @@ class BaseClient {
         endpoint: this.options.endpoint,
         unfinished: false,
         user,
+        sharedUserMessageId,
       },
       { context: 'api/app/clients/BaseClient.js - saveMessageToDatabase #saveMessage' },
     );

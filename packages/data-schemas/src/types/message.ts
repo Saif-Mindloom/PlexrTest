@@ -12,6 +12,8 @@ export interface IMessage extends Document {
   clientId?: string;
   invocationId?: number;
   parentMessageId?: string;
+  sharedUserMessageId?: string;
+  multiLLMSiblings?: IMessage[];
   tokenCount?: number;
   summaryTokenCount?: number;
   sender?: string;

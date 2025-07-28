@@ -362,6 +362,7 @@ export type TMessageProps = {
   siblingCount?: number;
   setCurrentEditId?: React.Dispatch<React.SetStateAction<string | number | null>> | null;
   setSiblingIdx?: ((value: number) => void | React.Dispatch<React.SetStateAction<number>>) | null;
+  userMessage?: boolean;
 };
 
 export type TMessageIcon = { endpoint?: string | null; isCreatedByUser?: boolean } & Pick<

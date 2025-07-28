@@ -6,6 +6,7 @@ const {
   saveMessage,
   getMessage,
   getMessages,
+  getMessagesWithMultiLLMSiblings,
   updateMessage,
   deleteMessages,
 } = require('~/models');
@@ -164,7 +165,7 @@ router.post('/artifact/:messageId', async (req, res) => {
 router.get('/:conversationId', validateMessageReq, async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const messages = await getMessages({ conversationId }, '-_id -__v -user');
+    const messages = await getMessagesWithMultiLLMSiblings({ conversationId }, '-_id -__v -user');
     res.status(200).json(messages);
   } catch (error) {
     logger.error('Error fetching messages:', error);

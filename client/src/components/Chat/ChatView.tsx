@@ -1,23 +1,23 @@
+import type { TMessage } from 'librechat-data-provider';
+import { Constants } from 'librechat-data-provider';
 import { memo, useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
 import { useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
-import { Constants } from 'librechat-data-provider';
-import type { TMessage } from 'librechat-data-provider';
+import { useRecoilValue } from 'recoil';
 import type { ChatFormValues } from '~/common';
-import { ChatContext, AddedChatContext, useFileMapContext, ChatFormProvider } from '~/Providers';
-import { useChatHelpers, useAddedResponse, useSSE } from '~/hooks';
-import ConversationStarters from './Input/ConversationStarters';
-import { useGetMessagesByConvoId } from '~/data-provider';
-import MessagesView from './Messages/MessagesView';
 import { Spinner } from '~/components/svg';
-import Presentation from './Presentation';
-import { buildTree, cn } from '~/utils';
-import ChatForm from './Input/ChatForm';
-import Landing from './Landing';
-import Header from './Header';
-import Footer from './Footer';
+import { useGetMessagesByConvoId } from '~/data-provider';
+import { useAddedResponse, useChatHelpers, useSSE } from '~/hooks';
+import { AddedChatContext, ChatContext, ChatFormProvider, useFileMapContext } from '~/Providers';
 import store from '~/store';
+import { buildTree, cn } from '~/utils';
+import Footer from './Footer';
+import Header from './Header';
+import ChatForm from './Input/ChatForm';
+import ConversationStarters from './Input/ConversationStarters';
+import Landing from './Landing';
+import MessagesView from './Messages/MessagesView';
+import Presentation from './Presentation';
 
 function LoadingSpinner() {
   return (
@@ -40,8 +40,15 @@ function ChatView({ index = 0 }: { index?: number }) {
   const { data: messagesTree = null, isLoading } = useGetMessagesByConvoId(conversationId ?? '', {
     select: useCallback(
       (data: TMessage[]) => {
-        const dataTree = buildTree({ messages: data, fileMap });
-        return dataTree?.length === 0 ? null : (dataTree ?? null);
+        if (data && fileMap) {
+          console.log(data, 'data');
+          return data.map((message) => ({
+            ...message,
+            files: message.files?.map((file) => fileMap[file.file_id ?? ''] ?? file),
+          }));
+        }
+
+        return data?.length === 0 ? null : (data ?? null);
       },
       [fileMap],
     ),

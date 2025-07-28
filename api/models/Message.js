@@ -360,6 +360,115 @@ async function deleteMessages(filter) {
   }
 }
 
+/**
+ * Retrieves messages and their multi-LLM siblings grouped by shared user message ID.
+ * @async
+ * @function getMessagesWithMultiLLMSiblings
+ * @param {Object} filter - The filter criteria (e.g., conversationId, user)
+ * @param {string} [select] - The fields to select
+ * @returns {Promise<TMessage[]>} Array of messages with multi-LLM siblings included
+ * @throws {Error} If there is an error in retrieving messages
+ */
+async function getMessagesWithMultiLLMSiblings(filter, select) {
+  try {
+    // First get the main conversation messages
+    const mainMessages = await getMessages(filter, select);
+
+    // Create a modified message tree that includes siblings for multi-LLM responses
+    const messagesWithSiblings = [];
+
+    mainMessages.forEach((msg) => {
+      // Check if this message has llmResponses (new multi-LLM format)
+      if (msg.llmResponses && Array.isArray(msg.llmResponses) && msg.llmResponses.length > 1) {
+        // Transform llmResponses into multiLLMSiblings format for frontend compatibility
+        const [primaryResponse, ...additionalResponses] = msg.llmResponses;
+
+        // Use the first response as the primary message content
+        const primaryMessage = {
+          ...msg,
+          text: primaryResponse.text,
+          model: primaryResponse.model,
+          endpoint: primaryResponse.endpoint,
+          // Keep llmResponses for SSE compatibility
+          llmResponses: msg.llmResponses,
+        };
+
+        // Transform additional responses into sibling format
+        if (additionalResponses.length > 0) {
+          primaryMessage.multiLLMSiblings = additionalResponses.map((response, index) => ({
+            messageId: `${msg.messageId}_sibling_${index}`,
+            conversationId: msg.conversationId,
+            parentMessageId: msg.parentMessageId,
+            text: response.text,
+            model: response.model,
+            endpoint: response.endpoint,
+            isCreatedByUser: false,
+            createdAt: msg.createdAt,
+            updatedAt: msg.updatedAt,
+            user: msg.user,
+          }));
+        }
+
+        messagesWithSiblings.push(primaryMessage);
+      } else {
+        // Handle legacy approach: Find messages with sharedUserMessageId to identify multi-LLM groups
+        messagesWithSiblings.push(msg);
+      }
+    });
+
+    // Handle legacy sharedUserMessageId approach for backward compatibility
+    const sharedUserMessageIds = mainMessages
+      .filter(
+        (msg) => msg.sharedUserMessageId && (!msg.llmResponses || msg.llmResponses.length <= 1),
+      )
+      .map((msg) => msg.sharedUserMessageId);
+
+    if (sharedUserMessageIds.length > 0) {
+      // Get all messages (from different conversations) that share these user message IDs
+      const siblingMessages = await Message.find({
+        user: filter.user,
+        sharedUserMessageId: { $in: sharedUserMessageIds },
+        conversationId: { $ne: filter.conversationId }, // Exclude messages from the main conversation
+      })
+        .sort({ createdAt: 1 })
+        .lean();
+
+      // Group sibling messages by their shared user message ID
+      const siblingGroups = {};
+      siblingMessages.forEach((msg) => {
+        if (!siblingGroups[msg.sharedUserMessageId]) {
+          siblingGroups[msg.sharedUserMessageId] = [];
+        }
+        siblingGroups[msg.sharedUserMessageId].push(msg);
+      });
+
+      // Add legacy siblings to messages that don't already have llmResponses
+      messagesWithSiblings.forEach((msg) => {
+        if (
+          msg.sharedUserMessageId &&
+          siblingGroups[msg.sharedUserMessageId] &&
+          (!msg.llmResponses || msg.llmResponses.length <= 1)
+        ) {
+          // Find assistant responses that share the same parent (user message)
+          const assistantSiblings = siblingGroups[msg.sharedUserMessageId].filter(
+            (sibling) => !sibling.isCreatedByUser && sibling.parentMessageId,
+          );
+
+          if (assistantSiblings.length > 0) {
+            // Add siblings as a special property on the main message
+            msg.multiLLMSiblings = assistantSiblings;
+          }
+        }
+      });
+    }
+
+    return messagesWithSiblings;
+  } catch (err) {
+    logger.error('Error getting messages with multi-LLM siblings:', err);
+    throw err;
+  }
+}
+
 module.exports = {
   saveMessage,
   bulkSaveMessages,
@@ -370,4 +479,5 @@ module.exports = {
   getMessages,
   getMessage,
   deleteMessages,
+  getMessagesWithMultiLLMSiblings,
 };

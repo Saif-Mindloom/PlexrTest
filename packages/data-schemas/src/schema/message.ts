@@ -41,6 +41,11 @@ const messageSchema: Schema<IMessage> = new Schema(
     parentMessageId: {
       type: String,
     },
+    // New field for tracking multi-LLM shared user messages
+    sharedUserMessageId: {
+      type: String,
+      index: true,
+    },
     tokenCount: {
       type: Number,
     },

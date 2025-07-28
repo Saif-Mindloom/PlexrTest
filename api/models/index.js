@@ -14,6 +14,7 @@ const {
 const {
   getMessage,
   getMessages,
+  getMessagesWithMultiLLMSiblings,
   saveMessage,
   recordMessage,
   updateMessage,
@@ -36,6 +37,7 @@ module.exports = {
 
   getMessage,
   getMessages,
+  getMessagesWithMultiLLMSiblings,
   saveMessage,
   recordMessage,
   updateMessage,
